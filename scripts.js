@@ -1,161 +1,131 @@
-// Function to navigate from homepage to monthPage
+// Function to navigate from homepage to dashboard
 function enterWebsite() {
     document.getElementById('homepage').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+}
+
+// Function to show the month page
+function showMonthPage() {
+    document.getElementById('dashboard').classList.add('hidden');
     document.getElementById('monthPage').classList.remove('hidden');
 }
 
-// Function to go back to the homepage
-function goBackToHomepage() {
-    document.getElementById('monthPage').classList.add('hidden');
-    document.getElementById('homepage').classList.remove('hidden');
+// Function to save the ideal budgets entered by the user
+function saveBudgets() {
+    const rentBudget = document.getElementById('rent-ideal').value;
+    const foodBudget = document.getElementById('food-ideal').value;
+    const healthBudget = document.getElementById('health-ideal').value;
+
+    localStorage.setItem('rent-ideal', rentBudget);
+    localStorage.setItem('food-ideal', foodBudget);
+    localStorage.setItem('health-ideal', healthBudget);
+
+    alert('Budgets saved!');
+
+    displayBudgets();  // Display the saved budgets on cards
+    document.getElementById('budget-form').classList.add('hidden');
+    document.getElementById('category-cards').classList.remove('hidden');
 }
 
-// Function to open current month expenses
-function openCurrentMonth() {
-    document.getElementById('monthPage').classList.add('hidden');
-    document.getElementById('categoryPage').classList.remove('hidden');
-    document.getElementById('category-title').innerText = "This Month";
-    displayCurrentMonthData();
+// Function to load and display the budgets
+function displayBudgets() {
+    const rentBudget = localStorage.getItem('rent-ideal') || 0;
+    const foodBudget = localStorage.getItem('food-ideal') || 0;
+    const healthBudget = localStorage.getItem('health-ideal') || 0;
+
+    document.getElementById('rent-ideal-display').innerText = rentBudget;
+    document.getElementById('food-ideal-display').innerText = foodBudget;
+    document.getElementById('health-ideal-display').innerText = healthBudget;
+
+    updateMoneyLeft('rent');
+    updateMoneyLeft('food');
+    updateMoneyLeft('health');
 }
 
-// Function to open previous month data
-function openPreviousMonth() {
-    document.getElementById('monthPage').classList.add('hidden');
-    document.getElementById('categoryPage').classList.remove('hidden');
-    document.getElementById('category-title').innerText = "Previous Month Data";
-    displayPreviousMonthData();
-}
-
-// Function to open a new month for input
-function openNewMonth() {
-    const idealBudget = prompt("Enter your ideal budget for this month:");
-    if (idealBudget !== null) {
-        const currentMonthKey = getCurrentMonthKey();
-        localStorage.setItem(`${currentMonthKey}-rent-ideal`, idealBudget);
-        localStorage.setItem(`${currentMonthKey}-food-ideal`, idealBudget);
-        localStorage.setItem(`${currentMonthKey}-health-ideal`, idealBudget);
-        alert('Budgets saved! Now you can enter your expenses.');
-        openCurrentMonth();
-    }
-}
-
-// Function to get the key for the current month (YYYY-MM)
-function getCurrentMonthKey() {
-    const currentDate = new Date();
-    return currentDate.toISOString().slice(0, 7); // Format YYYY-MM
-}
-
-// Function to get the key for the previous month
-function getPreviousMonthKey() {
-    const previousMonth = new Date();
-    previousMonth.setMonth(previousMonth.getMonth() - 1);
-    return previousMonth.toISOString().slice(0, 7); // Format YYYY-MM
-}
-
-// Function to display current month data
-function displayCurrentMonthData() {
-    const currentMonthKey = getCurrentMonthKey();
-    displayBudgetAndSpent('rent', currentMonthKey);
-    displayBudgetAndSpent('food', currentMonthKey);
-    displayBudgetAndSpent('health', currentMonthKey);
-}
-
-// Function to display previous month data
-function displayPreviousMonthData() {
-    const previousMonthKey = getPreviousMonthKey();
-    displayBudgetAndSpent('rent', previousMonthKey);
-    displayBudgetAndSpent('food', previousMonthKey);
-    displayBudgetAndSpent('health', previousMonthKey);
-}
-
-// Function to display budgets and spent values for a specific month
-function displayBudgetAndSpent(category, monthKey) {
-    const idealBudget = localStorage.getItem(`${monthKey}-${category}-ideal`) || 0;
-    const moneySpent = localStorage.getItem(`${monthKey}-${category}-spent`) || 0;
-
-    document.getElementById(`${category}-ideal-display`).innerText = idealBudget;
+// Function to update money left for each category
+function updateMoneyLeft(category) {
+    const idealBudget = localStorage.getItem(`${category}-ideal`) || 0;
+    const moneySpent = localStorage.getItem(`${category}-spent`) || 0;
     document.getElementById(`${category}-spent`).innerText = moneySpent;
     document.getElementById(`${category}-left`).innerText = idealBudget - moneySpent;
 }
 
-// Function to open expense entry page
-function openExpenseEntry(category) {
-    document.getElementById('categoryPage').classList.add('hidden');
-    document.getElementById('expenseEntryPage').classList.remove('hidden');
-    loadExpenses(category);
+// Function to open a specific category and enter expenses
+function openCategory(category) {
+    document.getElementById('monthPage').classList.add('hidden');
+    document.getElementById('categoryPage').classList.remove('hidden');
+    document.getElementById('category-title').innerText = category.charAt(0).toUpperCase() + category.slice(1);
+    
+    // Show the ideal budget for the category
+    document.getElementById('spent-amount').setAttribute('data-category', category);
 }
 
-// Function to load existing expenses for the current month
-function loadExpenses(category) {
-    const expensesDiv = document.getElementById('expenses');
-    expensesDiv.innerHTML = ''; // Clear existing expenses
-    const currentMonthKey = getCurrentMonthKey();
-    const expenses = JSON.parse(localStorage.getItem(`${currentMonthKey}-${category}-expenses`) || '[]');
-    expenses.forEach(expense => {
-        expensesDiv.innerHTML += `<p>${expense.description}: $${expense.amount} <button onclick="editExpense('${category}', ${expense.amount}, '${expense.description}')">Edit</button></p>`;
-    });
-}
-
-// Function to save an expense for the current month
+// Function to save the expense entered by the user
 function saveExpense() {
-    const category = document.getElementById('category-title').innerText.toLowerCase();
+    const category = document.getElementById('spent-amount').getAttribute('data-category');
     const spentAmount = document.getElementById('spent-amount').value;
     const description = document.getElementById('description').value;
 
-    if (!spentAmount || !description) {
-        alert('Please enter both amount and description.');
-        return;
-    }
+    // Get current spent amount and update
+    let currentSpent = parseFloat(localStorage.getItem(`${category}-spent`) || 0);
+    currentSpent += parseFloat(spentAmount);
+    localStorage.setItem(`${category}-spent`, currentSpent);
 
-    const currentMonthKey = getCurrentMonthKey();
-    const currentSpent = parseFloat(localStorage.getItem(`${currentMonthKey}-${category}-spent`) || 0);
-    const newSpent = currentSpent + parseFloat(spentAmount);
-    localStorage.setItem(`${currentMonthKey}-${category}-spent`, newSpent);
+    // Create a new expense entry in the expenses section
+    const expenseDetails = `${description}: $${spentAmount}`;
+    const expenseDiv = document.createElement('div');
+    expenseDiv.innerText = expenseDetails;
 
-    // Save expense entry
-    const expenses = JSON.parse(localStorage.getItem(`${currentMonthKey}-${category}-expenses`) || '[]');
-    expenses.push({ amount: spentAmount, description: description });
-    localStorage.setItem(`${currentMonthKey}-${category}-expenses`, JSON.stringify(expenses));
-
-    // Reset input fields
+    // Add edit button for the expense
+    const editButton = document.createElement('button');
+    editButton.innerText = 'Edit';
+    editButton.onclick = () => editExpense(category, expenseDiv, spentAmount);
+    expenseDiv.appendChild(editButton);
+    
+    // Append to the respective category's expense list
+    document.getElementById(`${category}-expenses`).appendChild(expenseDiv);
+    
+    // Reset form fields
     document.getElementById('spent-amount').value = '';
     document.getElementById('description').value = '';
-
-    // Refresh expenses display
-    loadExpenses(category);
-    displayBudgetAndSpent(category, currentMonthKey);
+    
+    updateMoneyLeft(category);  // Update money left for the category
 }
 
-// Function to edit an expense for the current month
-function editExpense(category, amount, description) {
-    const newAmount = prompt('Edit amount:', amount);
-    const newDescription = prompt('Edit description:', description);
+// Function to handle editing an expense
+function editExpense(category, expenseDiv, oldSpentAmount) {
+    const newAmount = prompt("Enter new amount spent:", oldSpentAmount);
+    const newDescription = prompt("Enter new description:", expenseDiv.innerText.replace(/:.*$/, ''));
 
-    if (newAmount && newDescription) {
-        const currentMonthKey = getCurrentMonthKey();
-        const expenses = JSON.parse(localStorage.getItem(`${currentMonthKey}-${category}-expenses`) || '[]');
-        const updatedExpenses = expenses.map(expense => {
-            if (expense.amount == amount && expense.description == description) {
-                return { amount: newAmount, description: newDescription };
-            }
-            return expense;
-        });
-        localStorage.setItem(`${currentMonthKey}-${category}-expenses`, JSON.stringify(updatedExpenses));
+    if (newAmount !== null && newDescription !== null) {
+        // Update local storage
+        const oldSpent = parseFloat(localStorage.getItem(`${category}-spent`) || 0);
+        const difference = parseFloat(newAmount) - parseFloat(oldSpentAmount);
+        const updatedSpent = oldSpent + difference;
+
+        localStorage.setItem(`${category}-spent`, updatedSpent);
+        expenseDiv.innerText = `${newDescription}: $${newAmount}`;
         
-        // Update spent amount
-        const totalSpent = updatedExpenses.reduce((total, expense) => total + parseFloat(expense.amount), 0);
-        localStorage.setItem(`${currentMonthKey}-${category}-spent`, totalSpent);
-        
-        // Refresh expenses display
-        loadExpenses(category);
-        displayBudgetAndSpent(category, currentMonthKey);
+        // Add edit button again after editing
+        const editButton = document.createElement('button');
+        editButton.innerText = 'Edit';
+        editButton.onclick = () => editExpense(category, expenseDiv, newAmount);
+        expenseDiv.appendChild(editButton);
+
+        updateMoneyLeft(category);  // Update money left after editing
     }
 }
 
-// Function to go back to the category page
-function goBackToCategory() {
-    document.getElementById('expenseEntryPage').classList.add('hidden');
-    document.getElementById('categoryPage').classList.remove('hidden');
+// Function to go back to the dashboard
+function goBackToDashboard() {
+    document.getElementById('monthPage').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+}
+
+// Function to go back to the home page
+function goBackToHome() {
+    document.getElementById('dashboard').classList.add('hidden');
+    document.getElementById('homepage').classList.remove('hidden');
 }
 
 // Function to go back to the month page
@@ -163,3 +133,20 @@ function goBackToMonthPage() {
     document.getElementById('categoryPage').classList.add('hidden');
     document.getElementById('monthPage').classList.remove('hidden');
 }
+
+// Placeholder functions for previous and current months
+function showPreviousMonths() {
+    alert("Previous month data is under development.");
+}
+
+function showCurrentMonth() {
+    alert("Current month data is under development.");
+}
+
+// Load budgets and expenses on page load
+window.onload = function() {
+    if (localStorage.getItem('rent-ideal') || localStorage.getItem('food-ideal') || localStorage.getItem('health-ideal')) {
+        displayBudgets();
+        document.getElementById('category-cards').classList.remove('hidden');
+    }
+};
